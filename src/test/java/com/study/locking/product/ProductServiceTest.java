@@ -1,0 +1,41 @@
+package com.study.locking.product;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.OptimisticLockingFailureException;
+
+@SpringBootTest
+public class ProductServiceTest {
+
+	@Autowired
+	private ProductService productService;
+
+	@Autowired
+	private ProductRepository productRepository;
+
+	@Test
+	public void testOptimisticLocking() throws InterruptedException {
+		Product product = new Product();
+		product.setName("product");
+		product.setPrice(100.50);
+		productRepository.save(product);
+
+		Thread thread1 = new Thread(() -> {
+			productService.updateProductPrice(product.getId(), 200.0);
+		});
+
+		Thread thread2 = new Thread(() -> {
+			Assertions.assertThrows(OptimisticLockingFailureException.class, () -> {
+				productService.updateProductPrice(product.getId(), 300.0);
+			});
+		});
+
+		thread1.start();
+		thread2.start();
+
+		thread1.join();
+		thread2.join();
+	}
+}
