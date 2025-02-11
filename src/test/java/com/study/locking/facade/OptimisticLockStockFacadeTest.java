@@ -1,4 +1,4 @@
-package com.study.locking.service;
+package com.study.locking.facade;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,13 +14,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.study.locking.domain.Stock;
 import com.study.locking.repository.StockRepository;
+import com.study.locking.service.OptimisticLockStockService;
 
 @SpringBootTest
-class StockServiceTest {
+class OptimisticLockStockFacadeTest {
 
 	@Autowired
-	//private StockService stockService;
-	private PessimisticLockStockService stockService;
+	//private OptimisticLockStockFacade optimisticLockStockFacade;
+	private OptimisticLockStockService optimisticLockStockService;
 
 	@Autowired
 	private StockRepository stockRepository;
@@ -36,16 +37,6 @@ class StockServiceTest {
 	}
 
 	@Test
-	public void 재고감소() {
-		stockService.decrease(1L, 1L);
-
-		// 100 - 1 == 99 예상
-		Stock stock = stockRepository.findById(1L).orElseThrow();
-
-		assertEquals(99, stock.getQuantity());
-	}
-
-	@Test
 	public void 동시에_100개_요청() throws InterruptedException {
 		int threadCnt = 100;
 		ExecutorService executorService = Executors.newFixedThreadPool(32);
@@ -54,7 +45,10 @@ class StockServiceTest {
 		for (int i = 0; i < threadCnt; i++) {
 			executorService.submit(() -> {
 				try {
-					stockService.decrease(1L, 1L);
+					//optimisticLockStockFacade.decrease(1L, 1L);
+					optimisticLockStockService.decrease(1L, 1L);
+				// } catch (InterruptedException e) {
+				// 	throw new RuntimeException(e);
 				} finally {
 					latch.countDown();
 				}
@@ -67,6 +61,5 @@ class StockServiceTest {
 		assertEquals(0, stock.getQuantity());
 
 	}
-
 
 }
